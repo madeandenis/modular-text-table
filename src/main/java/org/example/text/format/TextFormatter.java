@@ -16,31 +16,42 @@ public class TextFormatter<T> {
     private String whiteSpace;
 
     public TextFormatter(){
-        setWhiteSpace(" ");
-        setAlignmentState(Alignment.CENTER);
+        setDefaultAttributes();
     }
     public TextFormatter(T rawData,int containerWidth){
-        setWhiteSpace(" ");
+        setDefaultAttributes();
         updateData(rawData);
         setContainerWidth(containerWidth);
+    }
+    private void setDefaultAttributes(){
+        setWhiteSpace(" ");
         setAlignmentState(Alignment.CENTER);
     }
-
 
     // Setters
     public void updateData(T data) {
-        this.stringData = data.toString();
+        if (data == null) {
+            this.stringData = "null";
+        } else {
+            this.stringData = String.valueOf(data);
+        }
+        // Updating the container width every time the content is being replaced ensures
+        // that cells does not remain the previous width
+        setContainerWidth(this.stringData.length());
     }
 
     public void setStringData(String stringData) {
         this.stringData = stringData;
+        setContainerWidth(this.stringData.length());
     }
 
-    public void setFormattedData(String formattedData) {
-        this.formattedData = formattedData;
-    }
     public void setContainerWidth(int containerWidth) {
-        this.containerWidth = containerWidth;
+        if(containerWidth >= 0 && containerWidth >= this.stringData.length()) {
+            this.containerWidth = containerWidth;
+        }
+        else {
+            throw new IllegalArgumentException("Container width must non-negative and greater or equal to string data length.");
+        }
     }
 
     public void setAlignmentState(Alignment alignmentState) {
@@ -69,7 +80,8 @@ public class TextFormatter<T> {
     }
 
     public String getFormattedData() {
-        return formattedData != null ? formattedData : getStringData();
+        defaultAlignment();
+        return (formattedData != null) ? formattedData : getStringData();
     }
 
     // Text Styles
@@ -92,15 +104,23 @@ public class TextFormatter<T> {
     }
 
     public void lowerCase(){
-        setStringData(TextCasing.setAllLowerCase(getStringData()));
-        defaultAlignment();
+        updateAndRealign(TextCasing.toAllLowerCase(getStringData()));
     }
     public void upperCase(){
-        setStringData(TextCasing.setAllUpperCase(getStringData()));
-        defaultAlignment();
+        updateAndRealign(TextCasing.toAllUpperCase(getStringData()));
     }
     public void capitalize(){
-        setStringData(TextCasing.setCapitalizedText(getStringData()));
+        updateAndRealign(TextCasing.toCapitalizedText(getStringData()));
+    }
+
+    // When changing the casing of a word using the setStringData function,
+    // the initial width is reset with the new one.
+    // However, if the cell was resized with a new width, we want to retain that current width.
+    // To achieve this, we create a backup container width.
+    private void updateAndRealign(String stringData){
+        int backupContainerWidth = getContainerWidth();
+        setStringData(stringData);
+        setContainerWidth(backupContainerWidth);
         defaultAlignment();
     }
 }
