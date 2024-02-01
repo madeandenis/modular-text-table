@@ -37,6 +37,23 @@ class CellTest {
         System.out.println("testing_Cell_Creations_Printing_All_Possible_CellTypes");
         // Testing all cellTypes from enum CellType
         for (Cell.CellType cellType : Cell.CellType.values()) {
+
+            System.out.println(cellType + " for " + testString.getClass());
+
+            Cell<Object> testCell = new Cell<>(testString,
+                    cellWidth,
+                    cellType);
+
+            // Display the cell
+            System.out.println(testCell+System.lineSeparator());
+        }
+    }
+
+    @Test
+    void testingCellCreations_PrintingAllPossibleCellTypes_UsingTestCases() {
+        System.out.println("testing_Cell_Creations_Printing_All_Possible_CellTypes_Using_Test-Cases");
+        // Testing all cellTypes from enum CellType
+        for (Cell.CellType cellType : Cell.CellType.values()) {
             for (Object testCase : testCases) {
 
                 if(testCase != null) {

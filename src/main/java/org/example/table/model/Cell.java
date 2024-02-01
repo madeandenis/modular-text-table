@@ -1,9 +1,11 @@
 package org.example.table.model;
 
-import org.example.table.format.StandardCellFormatter;
+import org.example.table.format.CellFormatter;
 import org.example.text.format.TextFormatter;
+import org.example.text.styles.TableStyles;
 import org.example.text.utils.TextUtils;
-import org.w3c.dom.Text;
+
+import java.util.Optional;
 
 // Cell is a generic class with a type parameter
 public class Cell<T> {
@@ -16,18 +18,57 @@ public class Cell<T> {
         // 3x3 cell variation
         TOP_LEFT,TOP_CENTER,TOP_RIGHT,
         MIDDLE_LEFT,MIDDLE_CENTER,MIDDLE_RIGHT,
-        BOTTOM_LEFT,BOTTOM_CENTER,BOTTOM_RIGHT
+        BOTTOM_LEFT,BOTTOM_CENTER,BOTTOM_RIGHT;
+
+        public static Cell.CellType getSingleCellType(Cell.CellType cellType){
+            if (cellType.name().contains("TOP")) {
+                return Cell.CellType.TOP_SINGLE;
+            } else if (cellType.name().contains("MIDDLE")) {
+                return Cell.CellType.MIDDLE_SINGLE;
+            } else {
+                return Cell.CellType.BOTTOM_SINGLE;
+            }
+        }
+        public static Cell.CellType getLeftCellType(Cell.CellType cellType) {
+            if (cellType.name().contains("TOP")) {
+                return Cell.CellType.TOP_LEFT;
+            } else if (cellType.name().contains("MIDDLE")) {
+                return Cell.CellType.MIDDLE_LEFT;
+            } else {
+                return Cell.CellType.BOTTOM_LEFT;
+            }
+        }
+
+        public static Cell.CellType getMiddleCellType(Cell.CellType cellType) {
+            if (cellType.name().contains("TOP")) {
+                return Cell.CellType.TOP_CENTER;
+            } else if (cellType.name().contains("MIDDLE")) {
+                return Cell.CellType.MIDDLE_CENTER;
+            } else {
+                return Cell.CellType.BOTTOM_CENTER;
+            }
+        }
+
+        public static Cell.CellType getRightCellType(Cell.CellType cellType) {
+            if (cellType.name().contains("TOP")) {
+                return Cell.CellType.TOP_RIGHT;
+            } else if (cellType.name().contains("MIDDLE")) {
+                return Cell.CellType.MIDDLE_RIGHT;
+            } else {
+                return Cell.CellType.BOTTOM_RIGHT;
+            }
+        }
 
     }
 
     private T data;
-    private Class<?> dataType;
     private CellType cellType;
     private int cellWidth;
     private int cellHeight;
     private String whiteSpace;
+    private TableStyles tableStyle;
 
-    private final StandardCellFormatter standardCellFormatter;
+    private final CellFormatter cellFormatter;
     private final TextFormatter<T> textFormatter;
     private final Text text;
 
@@ -44,8 +85,9 @@ public class Cell<T> {
         this.cellHeight = cellHeight;
         this.cellType = cellType;
         this.whiteSpace = " ";
+        this.tableStyle = TableStyles.BoxDrawing;
 
-        standardCellFormatter = new StandardCellFormatter();
+        cellFormatter = new CellFormatter();
         textFormatter = new TextFormatter<>(data,cellWidth);
         text = new Text(this);
     }
@@ -76,8 +118,7 @@ public class Cell<T> {
     }
 
     public Class<?> getDataType() {
-        dataType = data.getClass();
-        return dataType;
+        return data.getClass();
     }
 
     public Text text(){
@@ -102,12 +143,15 @@ public class Cell<T> {
         return this.whiteSpace;
     }
 
+    public TableStyles getTableStyle() {
+        return tableStyle;
+    }
+
     // Data String Formatter
     private String dataToString(T data){
-        if(data == null){
-            return "null";
-        }
-        return data.toString();
+        return Optional.ofNullable(data)
+                .map(Object::toString)
+                .orElse("null");
     }
 
     // Setters
@@ -129,19 +173,29 @@ public class Cell<T> {
     }
 
     public void setWhiteSpace(String whiteSpace) {
-        this.whiteSpace = whiteSpace;
-        text.setWhiteSpace(whiteSpace);
+        this.whiteSpace = whiteSpace;   // Changes whiteSpace inside cell
+        text.setWhiteSpace(whiteSpace); // Changes whiteSpace inside textFormatter
     }
     public void setDefaultWhiteSpace() {
         this.whiteSpace = " ";
         text.setWhiteSpace(whiteSpace);
     }
 
+    public void setTableStyle(TableStyles tableStyle) {
+        this.tableStyle = tableStyle;
+    }
+
     private String formatCell(){
-        // Prevents unaligned cells to be formatted
+        // Prevents unaligned cells (inside content) to be formatted
         textFormatter.defaultAlignment();
 
-        String graphicalCell = standardCellFormatter.formatCell(cellType,textFormatter.getFormattedData(),cellWidth,cellHeight,whiteSpace);
+        String graphicalCell = cellFormatter.format(
+                cellType,
+                tableStyle,
+                getTextFormatter().getFormattedData(),
+                cellWidth,cellHeight,
+                whiteSpace);
+
         // Remove the extra line-separator from the graphical cell for cell binding
         graphicalCell = TextUtils.chop(graphicalCell);
 
@@ -149,10 +203,8 @@ public class Cell<T> {
     }
 
     public T handleNullData(T data){
-        if(data == null){
-            return (T) "null";
-        }
-        return data;
+        return Optional.ofNullable(data)    // if non-null
+                       .orElse((T) "null"); // else
     }
 
     public class Text{

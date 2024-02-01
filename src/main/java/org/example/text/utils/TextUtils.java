@@ -4,9 +4,20 @@ import java.util.List;
 
 public class TextUtils {
 
+    public static int calculatePadding(String cellContent, int headerWidth){
+        return headerWidth - cellContent.length();
+    }
+    public static String repeatCharacter(char character, int count){
+        return String.valueOf(character).repeat(count);
+    }
     // Removes last character from a string
     public static String chop(String string){
-        return  string.substring(0, string.length() - 1);
+        if (string != null) {
+            return string.substring(0, string.length() - 1);
+        }
+        else {
+            return null;
+        }
     }
     public static String removeFirstLine(String string) {
 

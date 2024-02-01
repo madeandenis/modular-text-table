@@ -1,7 +1,5 @@
 package org.example.constants;
 
-import javax.swing.*;
-
 public class Unicode {
     // Box-Drawing unicode characters (U+250x -> U+257x)
 
@@ -20,20 +18,20 @@ public class Unicode {
     7   U+257x	╰	╱	╲	╳	╴	╵	╶	╷	╸	╹	╺	╻	╼	╽	╾	╿
      *
      */
+    static private final int startCharacter_boxDrawing = 0x2500;
 
-    private static char[][] generateUnicodeMatrix(int rows, int columns, int startUnicodeChar) {
+    private static char[][] generateUnicodeMatrix() {
 
-        char[][] unicodeMatrix = new char[rows][columns];
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < columns; j++) {
+        int startUnicodeChar = startCharacter_boxDrawing;
+        char[][] unicodeMatrix = new char[8][16];
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 16; j++) {
                 unicodeMatrix[i][j] = (char) startUnicodeChar;
                 startUnicodeChar++;
             }
         }
         return unicodeMatrix;
     }
-
-    static private final int startCharacter_boxDrawing = 0x2500;
-    static public char [][] boxMatrix = generateUnicodeMatrix(8,16,startCharacter_boxDrawing);
+    static public char [][] boxMatrix = generateUnicodeMatrix();
 
 }
