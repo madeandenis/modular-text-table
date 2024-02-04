@@ -82,12 +82,29 @@ public class TableFormatter {
     }
 
     public List<Cell<?>> convertDataToCellList(Cell.CellType cellType, List<?> data, List<Integer> paddings) {
-        return IntStream.range(0, data.size())
-                .mapToObj(i -> new Cell<>(
-                        data.get(i),
-                        data.get(i).toString().length() + paddings.get(i),
-                        cellType))
-                .collect(Collectors.toList());
+        List<Cell<?>> cellList = new ArrayList<>();
+
+        for (int i = 0; i < data.size(); i++) {
+            if(data.get(i) == null){
+                cellList.add(
+                        new Cell<>(
+                                "null",
+                                "null".length() + paddings.get(i),
+                                cellType)
+                );
+            }
+            else {
+                cellList.add(
+                        new Cell<>(
+                                data.get(i),
+                                data.get(i).toString().length() + paddings.get(i),
+                                cellType)
+                );
+            }
+        }
+
+        return cellList;
+
     }
 
     public List<Cell<?>> setOrderedCellTypes(List<Cell<?>> cellList, Cell.CellType cellType){

@@ -2,149 +2,215 @@ package org.example.table.model;
 
 import org.example.table.format.TableFormatter;
 import org.example.table.manipulation.TableEditor;
+import org.example.text.styles.TableStyles;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Table {
-    private StringBuilder formattedTable;
-    private List<String> columnHeaders;
-    private List<Class<?>> columnTypes;
-    private List<List<Cell<?>>> data;
+    private StringBuilder       formattedTable;
+    private StringBuilder       formattedHeaders;
+    private List<Cell<?>>       headers;
+    private List<List<Cell<?>>> tableData;
+    private TableStyles         tableStyle;
+    TableFormatter              formatter;
+    TableEditor                 editor;
 
-    TableFormatter formatter = new TableFormatter();
-    TableEditor editor;
+    // Default constants
+    public static final TableStyles DEFAULT_STYLE = TableStyles.BoxDrawing;
+    public static final Cell.CellType bottomRowType = Cell.CellType.BOTTOM_SINGLE;
+    public static final int DEFAULT_PADDING = 2;
 
 
-    // Constructors
+    public void initTableVars(){
+        formattedTable   = new StringBuilder();
+        formattedHeaders = new StringBuilder();
+        headers          = new ArrayList<>();
+        tableData        = new ArrayList<>();
+        tableStyle       = DEFAULT_STYLE;
+        formatter        = new TableFormatter();
+        editor           = new TableEditor(this);
+    }
+
+    /*
+        Table Constructors
+        -> defaultConstructor
+        -> with parameters for headers initialization
+            -> padding with varargs
+            -> varargs
+            -> padding with list
+            -> list
+            -> matrix
+     */
     public Table(){
-        formattedTable = new StringBuilder();
-        columnTypes = new ArrayList<>();
-        data = new ArrayList<>();
-        editor = new TableEditor(this);
+        initTableVars();
     }
-    // Manual Padding using varargs for columnNames
-    public Table(int padding,String... columnNames){
+    public Table(int padding, String... columnName){
         this();
-        columnHeaders.addAll(Arrays.asList(columnNames));
-        editor.setHeaders_ManualPadding(columnHeaders,padding);
+        setHeaders(padding,columnName);
+    }
+    public Table(String... columnName){
+        this(DEFAULT_PADDING,columnName);
+    }
+    public Table(int padding, List<String> columnName){
+        this();
+        setHeaders(padding,columnName);
+    }
+    public Table(List<String> columnName){
+        this(DEFAULT_PADDING,columnName);
+    }
+    public Table(int padding, Object[][] dataMatrix){
+        this();
 
     }
-    // Automatic Padding using varargs for columnNames
-    public Table(String... columnNames){
-        this(2,columnNames);
-
+    public Table(Object[][] dataMatrix){
+        this(DEFAULT_PADDING,dataMatrix);
     }
 
-    @Override
-    public String toString(){
+    /*
+        Setters
+     */
+    public void setHeader(int columnIndex, int padding, String newHeader){
+        editor.setHeaderAt(columnIndex,padding,newHeader);
+        editor.applyCorrectColumnWidth();
+    }
+    public void setHeaders(String... columnName){
+        setHeaders(DEFAULT_PADDING, Arrays.asList(columnName));
+    }
+    public void setHeaders(int padding, String... columnName){
+        setHeaders(padding, Arrays.asList(columnName));
+    }
+    public void setHeaders(List<String>columnNames){
+        setHeaders(DEFAULT_PADDING,columnNames);
+    }
+    public void setHeaders(int padding, List<String>columnNames){
+        if(getHeaders().isEmpty()) {
+            headers.clear();
+            headers.addAll(editor.headersToCellList(padding, columnNames));
+        }
+        else{
+            if (getHeaders().size() != columnNames.size()){
+                System.out.println("The number of headers should be equal to: " + getHeaders().size());
+                return;
+            }
+            headers.clear();
+            headers.addAll(editor.headersToCellList(padding, columnNames));
+            editor.applyCorrectColumnWidth();
+        }
+    }
+    /*
+        Table Formatting
+     */
+    public void setFormattedHeaders(){
+        if(headers.isEmpty()){
+            return;
+        }
+        formattedHeaders.setLength(0);
+        formattedHeaders.append(
+                formatter.formatTableRow(headers)
+        );
+    }
+    public void setFormattedTable(){
+        if(tableData.isEmpty()){
+            return;
+        }
         formattedTable.setLength(0);
-        formatTable();
-        return formattedTable.toString();
+        for(var tableRow : tableData){
+            formattedTable.append(
+                    formatter.formatTableRow(tableRow)
+            );
+        }
+
     }
 
-    // Manual Padding using List for columnNames
-    public Table(int padding,List<String> columnNames){
-        // String[]::new => size -> new String[size]
-        this(padding, columnNames.toArray(String[]::new));
+
+    /*
+        Getters
+     */
+
+    public List<List<Cell<?>>> getTableData() {
+        return tableData;
     }
 
-    // Automatic Padding using List for columnNames
-    public Table(List<String> columnNames){
-        this(2, columnNames);
+    public List<Cell<?>> getHeaders(){
+        return headers;
+    }
+    public List<?> getHeadersStrings(){
+        return getHeaders()
+                .stream()
+                .map(Cell::getData)
+                .collect(Collectors.toList());
+    }
+    public List<Cell<?>> getRow(int rowIndex){
+        return tableData.get(rowIndex);
+    }
+    public Cell<?> getCell(int rowIndex, int columnIndex){
+        return getRow(rowIndex).get(columnIndex);
+    }
+    public TableFormatter getTableFormatter(){
+        return formatter;
+    }
+    public int getTableWidth(){
+        if(tableData.isEmpty()){
+            return 0;
+        }
+        return tableData.get(0).size();
+    }
+    public int getTableHeight(){
+        if(tableData.isEmpty()){
+            return 0;
+        }
+        return tableData.size();
     }
 
-    // Overloading methods for setting headers
-    public void setColumnHeaders(int padding,String... columnNames) {
-        columnHeaders.clear();
-        columnHeaders.addAll(Arrays.asList(columnNames));
-        editor.setHeaders_ManualPadding(columnHeaders,padding);
+    /*
+        Table Manipulation
+        -> Row Manipulation
+     */
+    public void addRow(List<?> rowData){
+        editor.addRow(rowData,bottomRowType);
+        editor.updateAndFixTable();
     }
-    public void setColumnHeaders(String... columnNames) {
-        columnHeaders.clear();
-        columnHeaders.addAll(Arrays.asList(columnNames));
-        editor.setHeaders_AutomaticPadding(columnHeaders);
+    public void addRow(Objects... rowData){
+        addRow(Arrays.asList(rowData));
     }
-    public void setColumnHeaders(int padding,List<String> columnNames){
-        columnHeaders.clear();
-        columnHeaders.addAll(columnNames);
-        editor.setHeaders_ManualPadding(columnHeaders,padding);
+    public void removeRow(int rowIndex){
+        editor.deleteRow(rowIndex);
+        editor.updateAndFixTable();
     }
-    public void setColumnHeaders(List<String> columnNames){
-        columnHeaders.clear();
-        columnHeaders = columnNames;
-        editor.setHeaders_AutomaticPadding(columnHeaders);
+    public void removeLastRow(){
+        removeRow(getTableHeight()-1);
     }
-
-    // Add new row
-    public void addRow(List<String> columnNames){
-        editor.addRow(columnNames);
+    public void removeFirstRow(){
+        removeRow(0);
     }
-    public void addRow(String... columnNames){
-        editor.addRow(Arrays.asList(columnNames));
-    }
-
-    // Add new column
-    // Using List<?>
+    /*
+        -> Column Manipulation
+     */
     public void addColumn(String header, int headerPadding, List<?> columnData){
         editor.addColumn(header,headerPadding,columnData);
     }
     public void addColumn(String header, List<?> columnData){
-        editor.addColumn(header,header.length()+2,columnData);
+        addColumn(header,DEFAULT_PADDING,columnData);
     }
-    // Using varargs
-    public void addColumn(String header, int headerPadding, String... columnData){
-        editor.addColumn(header,headerPadding,Arrays.asList(columnData));
-    }
-    public void addColumn(String header, String... columnData){
-        editor.addColumn(header,header.length()+2,Arrays.asList(columnData));
+    public void addColumn(String header, int headerPadding, Object... columnData){
+        addColumn(header,headerPadding,Arrays.asList(columnData));
+    }public void addColumn(String header, Object... columnData){
+        addColumn(header,DEFAULT_PADDING,columnData);
     }
 
-    // Getters
-    public TableFormatter getFormatter() {
-        return formatter;
-    }
-
-    public StringBuilder getFormattedTable() {
-        return formattedTable;
-    }
-
-    public List<String> getColumnHeaders() {
-        return columnHeaders;
-    }
-
-    public List<Class<?>> getColumnTypes() {
-        return columnTypes;
-    }
-
-    public List<List<Cell<?>>> getData() {
-        return data;
-    }
-    public int getTableWidth(){
-        if(!data.isEmpty()) {
-            return data.get(0).size();
+    /*
+        To String Method
+     */
+    @Override
+    public String toString(){
+        setFormattedHeaders();
+        setFormattedTable();
+        if (formattedTable.isEmpty() && formattedHeaders.isEmpty()){
+            return "Table is empty";
         }
-        return 0;
-    }
-    public int getTableHeight(){
-        if(!data.isEmpty()) {
-            return data.size();
-        }
-        return 0;
-    }
-    public Cell<?> getCellAt(int rowIndex, int columnIndex){
-        return data.get(rowIndex).get(columnIndex);
-    }
-    // Display methods
-    public void displayTableSize(){
-        System.out.println("Table size : [ " + getTableWidth() + " X " + getTableHeight() + " ] (W x H)" );
+        // Joins the table headers with table content together for output
+        return String.valueOf(formattedHeaders) + formattedTable;
     }
 
-    // Table graphical format
-    public void formatTable(){
-        for(var rowData : data){
-            formattedTable.append(formatter.formatTableRow(rowData));
-        }
-    }
 }

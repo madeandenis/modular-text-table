@@ -1,169 +1,327 @@
 package org.example.table.manipulation;
 
-import org.example.table.format.CellBuilder;
 import org.example.table.format.TableFormatter;
 import org.example.table.model.Cell;
 import org.example.table.model.Table;
 import org.example.text.utils.TextUtils;
+import org.w3c.dom.ls.LSInput;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class TableEditor {
-    private final Table table;
     private final TableFormatter formatter;
+    private final Table          table;
 
-    public TableEditor(Table table){
-        this.table = table;
-        this.formatter = this.table.getFormatter();
+    public TableEditor(Table table) {
+        this.table     = table;
+        this.formatter = table.getTableFormatter();
     }
 
+    /*
+        Header Transformation
+     */
+    public List<Cell<String>> headersToCellList(int padding,List<String> headers){
 
-    // Table headers logic
-    private List<Cell<?>> mapHeadersToTableCells(List<String> headers, int padding){
-        // First create the cell list
-        List<Cell<?>> headerCells = formatter.convertHeaderDataToCellList(headers,padding);
-        // Set accordingly cell types from LEFT->RIGHT or SINGLE
-        headerCells = formatter.setOrderedCellTypes(headerCells,headerCells.get(0).getCellType());
+        List<Cell<String>> cellList = new ArrayList<>();
+        for (int headerIndex = 0; headerIndex < headers.size(); headerIndex++) {
 
-        return headerCells;
+            Cell.CellType headerCellType = determineHeaderCellType(headerIndex,headers.size());
+            Cell<String> cellHeader = new Cell<>(
+                    headers.get(headerIndex),
+                    headers.get(headerIndex).length() + padding,
+                    headerCellType
+            );
+
+            cellList.add(cellHeader);
+        }
+        return cellList;
     }
-
-    private void addHeadersListToTable(List<Cell<?>> headerCells){
-        // Add them to the first table row
-        var data = table.getData();
-        if(data.isEmpty()){
-            data.add(headerCells);
+    private Cell.CellType determineHeaderCellType(int headerIndex, int headersSize){
+        if(headerIndex == 0){
+            return Cell.CellType.TOP_LEFT;
+        }
+        else if(headerIndex == headersSize - 1)
+        {
+            return Cell.CellType.TOP_RIGHT;
         }
         else {
-            deleteRow(0);
-            data.add(0,headerCells);
+            return Cell.CellType.TOP_CENTER;
         }
     }
-
-    public void setHeaders_ManualPadding(List<String> headers, int padding){
-        List<Cell<?>> headersCellList = mapHeadersToTableCells(headers,padding);
-        addHeadersListToTable(headersCellList);
-    }
-    public void setHeaders_AutomaticPadding(List<String> headers){
-        setHeaders_ManualPadding(headers,2);
-    }
-    private void appendHeader(String header, int padding){
-        var data = table.getData();
-        Cell<String> headerCell = new Cell<>(header,header.length()+padding, Cell.CellType.TOP_SINGLE);
-        data.get(0).add(headerCell);
-    }
-
-    // Table rows logic
-    private List<Cell<?>> mapRowDataToTableCells(List<?> rowData, List<Integer> paddings){
-        // First create the cell list
-        List<Cell<?>> rowCells = formatter.convertDataToCellList(Cell.CellType.BOTTOM_LEFT,rowData,paddings);
-        // Set accordingly cell types from LEFT->RIGHT or SINGLE
-        rowCells = formatter.setOrderedCellTypes(rowCells,rowCells.get(0).getCellType());
-
-        return rowCells;
-    }
-    private void addCellRowToTable(List<Cell<?>> rowCells){
-        // Add them to the first table row
-        var data = table.getData();
-        data.add(rowCells);
-    }
-
-
-
-    // Insertion / Deletions Rows
-    public void addRow(List<?> rowData){
-        var data = table.getData();
-        if(data.isEmpty()){
-            throw new UnsupportedOperationException("Cannot add rows without table headers");
-        }
-        if(rowData.size() > table.getTableWidth()){
-            throw new IllegalArgumentException("Row has more cells than expected. Expected: " + table.getTableWidth() + " cells.");
-        }
-        else if (rowData.size() < table.getTableWidth()){
-            throw new IllegalArgumentException("Insufficient number of cells in the row. Expected at least " + table.getTableWidth() + " cells.");
-        }
-
-        // Every new row is displayed as a bottom row
-        Cell.CellType cellType = Cell.CellType.BOTTOM_LEFT;
-
-        // Calculate individual padding based on the header cells
-        List<Integer> cellPaddings = new ArrayList<>();
-
-        for (int column = 0; column < table.getTableWidth(); column++) {
-            Cell<?> header = table.getCellAt(0,column);
-            int headerWidth = header.getCellWidth();
-
-            cellPaddings.add(TextUtils.calculatePadding(
-                    rowData.get(column).toString(),
-                    headerWidth));
-        }
-
-        List<Cell<?>> cellRow = mapRowDataToTableCells(rowData,cellPaddings);
-        addCellRowToTable(cellRow);
-
-        // Update bottom cells to middle cells after row insertion
-        adjustBottomCellsToMiddleCells();
-
-    }
-
-    public void addColumn(String header, int headerPadding, List<?> columnData){
-        var tableData = table.getData();
-
-        // Check if the table is empty
-        // If it is then add a single column with Cell Type Single
+    // Changes header value at a specified index
+    public void setHeaderAt(int headerIndex, int padding, String header){
+        var tableData = table.getTableData();
         if(tableData.isEmpty()){
-            setHeaders_ManualPadding(Collections.singletonList(header),headerPadding);
-            for(var data : columnData){
-                addRow(Collections.singletonList(data));
-            }
+            System.out.println("Cannot modify header : Table is empty.");
+            return;
         }
-        // If not, then append to the table end
-        else {
+        if (headerIndex < 0 || headerIndex > table.getTableWidth()-1){
+            System.out.println("Cannot modify header : Header index is invalid");
+        }
+        List<String>  updatedHeadersList   = new ArrayList<>();
+        List<Integer> currHeadersWidths    = new ArrayList<>();
 
-            // Check if column doesn't overflow the table height
-            if ( columnData.size() + 1 > tableData.size()){
-                System.out.println("Column input exceeds table height\nRequired column height : " + tableData.size());
-                return;
+        // Method creates a copy of a string list for the current headers and replaces with new header at requested index
+        // Creates integer list for keeping headers widths
+        for (var currHeader : table.getHeaders()){
+            if(table.getHeaders().indexOf(currHeader) == headerIndex){
+                updatedHeadersList.add(header);
             }
+            else {
+                updatedHeadersList.add(currHeader.getData().toString());
+            }
+            currHeadersWidths.add(currHeader.getCellWidth());
+        }
 
-            appendHeader(header,headerPadding);
+        // Once the copy is over, the headers are cleared and the updated list is added using padding parameter
+        table.getHeaders().clear();
+        table.getHeaders().addAll(headersToCellList(padding,updatedHeadersList));
 
-            int headerWidth = header.length() + headerPadding;
+        // The headers need to be restored with the previous width
+        for (int column = 0; column < table.getHeaders().size(); column++) {
+            var currHeader = table.getHeaders().get(column);
 
-            for (int i = 0; i < columnData.size(); i++) {
-                var columnElement = columnData.get(i);
-                Cell<?> newCell = new Cell<>(
-                        columnElement,
-                        columnElement.toString().length() + TextUtils.calculatePadding(columnElement.toString(),headerWidth),
-                        Cell.CellType.MIDDLE_CENTER // Trash Value
+            // The modified header keeps its cell width and cell text container width
+            if (column == headerIndex){
+                continue;
+            }
+            else {
+                currHeader.setCellWidth(
+                        currHeadersWidths.get(column)
                 );
-
-                /// ????
-                tableData.get(i+1).add(newCell);
+                currHeader.getTextFormatter().setContainerWidth(
+                        currHeadersWidths.get(column)
+                );
             }
-
-            adjustBottomCellsToMiddleCells();
         }
     }
-
-    public void deleteRow(int indexRow){
-        var data = table.getData();
-        data.remove(indexRow);
+    /*
+        Row Transformation
+     */
+    public List<Cell<?>> rowToCellList(List<?> rowData, List<Integer> paddings, Cell.CellType cellType){
+        var cellList = formatter.convertDataToCellList(
+                cellType,
+                rowData,
+                paddings
+        );
+        cellList = formatter.setOrderedCellTypes(
+                cellList,
+                cellList.get(0).getCellType()
+        );
+        return cellList;
     }
 
-    // Table Update
-    public void adjustBottomCellsToMiddleCells(){
-        var data = table.getData();
-        for (var row : data){
-            for (var cell : row){
-                if(data.indexOf(row) > 0 && data.indexOf(row) < data.size()-1){
-                    cell.setCellType(Cell.CellType.MIDDLE_CENTER);
+    /*
+        Row Manipulation
+        -> Row appending addRow()
+            -> validateRowSize()
+            -> calculateCellPaddings()
+                -> calculatePadding()
+     */
+    public void addRow(List<?> rowData , Cell.CellType cellType){
+        if(table.getHeaders().isEmpty()){
+            System.out.println("Cannot add rows without table headers");
+            return;
+        }
+        if (!validateRowSize(rowData)){
+            return;
+        }
+
+        // Calculate individual cell padding based on its corresponding header cell
+        List<Integer> cellPaddings = calculateCellPaddings(rowData);
+
+        // Transform row data into a bottom table row
+        var cellRow = rowToCellList(rowData,cellPaddings,cellType);
+
+        // Add cellRow to the table
+        table.getTableData().add(cellRow);
+    }
+    private boolean validateRowSize(List<?> rowData){
+        if(rowData.size() > table.getHeaders().size() || rowData.size() < table.getHeaders().size()){
+            System.out.println(
+                    "Row has more cells than expected. Expected: " + table.getHeaders().size() + " cells.");
+            return false;
+        }
+        return true;
+    }
+    private List<Integer> calculateCellPaddings(List<?> rowData){
+        List<Integer> paddings = new ArrayList<>();
+
+        for (int column = 0; column < rowData.size(); column++) {
+            int headerWidth   = table.getHeaders().get(column).getCellWidth();
+            Object rowElement = rowData.get(column);
+
+            if(rowElement == null){
+                paddings.add(
+                        calculatePadding("null",headerWidth)
+                );
+            }
+            else {
+                paddings.add(
+                        calculatePadding(rowData.get(column).toString(),headerWidth)
+                );
+            }
+        }
+        return paddings;
+    }
+    private static int calculatePadding(String cellContent, int headerWidth){
+        return headerWidth - cellContent.length();
+    }
+    /*
+        Row Deletion
+     */
+    public void deleteRow(int rowIndex){
+        if( table.getTableData().isEmpty() || (rowIndex < 0 || rowIndex >= table.getTableHeight())){
+            System.out.println("Row at index : " + rowIndex + " does not exist");
+        }
+        else{
+            table.getTableData().remove(rowIndex);
+        }
+    }
+    
+    // TODO: create row/column insertion beside appending
+    /*
+        Column Manipulation
+        -> Column appending addColumn()
+            -> addSingleColumn()
+            -> appendColumn
+         
+     */
+    public void addColumn(String header, int headerPadding, List<?> columnData){
+        // If table is empty, add a single styled colum line
+        if (table.getTableData().isEmpty()){
+            addSingleColumn(header,headerPadding,columnData);
+        }
+        // Else, append the column to the table end
+        else {
+            appendColumn(header,headerPadding,columnData);
+        }
+    }
+    private void addSingleColumn(String header, int headerPadding, List<?> columnData){
+
+        table.setHeaders(headerPadding, Collections.singletonList(header));
+
+        for (int column = 0; column < columnData.size(); column++) {
+            var columnElement = columnData.get(column);
+            Cell.CellType rowType;
+            if(column == columnData.size()-1){
+                rowType = Cell.CellType.BOTTOM_SINGLE;
+            }
+            else {
+                rowType = Cell.CellType.MIDDLE_SINGLE;
+            }
+
+            addRow(Collections.singletonList(columnElement),rowType);
+        }
+        
+    }
+    private void appendColumn(String header, int headerPadding, List<?> columnData){
+        if(!validateColumn(columnData)){
+            System.out.println(
+                    "Column input exceeds table height. Required column height : " + table.getTableHeight()
+            );
+        }
+        else{
+            Cell<String> cellHeader = new Cell<>(header,header.length()+headerPadding, Cell.CellType.TOP_SINGLE);
+
+            int headerCellWidth = header.length() + headerPadding;
+
+            // Append new header
+            table.getHeaders().add(cellHeader);
+
+            for (var columnElement : columnData){
+                Cell<?> columnCell;
+                if(Objects.isNull(columnElement)){
+                    columnCell = addNulLCell(headerCellWidth);
+                }
+                else {
+                    columnCell = new Cell<>(
+                            columnElement,
+                            columnElement.toString().length() + calculatePadding(columnElement.toString(),headerCellWidth),
+                            Cell.CellType.TOP_SINGLE
+                    );
+                }
+
+                // Add new columnCell to the table
+                table.getRow(columnData.indexOf(columnElement)).add(columnCell);
+            }
+            // If the newly added column is shorter than the other columns in the table, append null cells to ensure equal column heights.
+            if(columnData.size() < table.getTableHeight()){
+                int heightDifference = table.getTableHeight() - columnData.size();
+                for (int i = 0; i < heightDifference; i++) {
+                    table.getRow(columnData.size() + i).add(addNulLCell(headerCellWidth));
                 }
             }
         }
     }
+    private Cell<?> addNulLCell(int headerWidth){
+        return new Cell<>(
+                "null",
+                "null".length() + calculatePadding("null",headerWidth),
+                Cell.CellType.MIDDLE_SINGLE
+        );
+    }
+    private boolean validateColumn(List<?> columnData){
+        return columnData.size() <= table.getTableHeight();
+    }
 
+    /*
+        Update Table
+        -> updateAndFixTable()
+            -> adjustBottomCells()
+        -> applyCorrectColumnWidth(){
+     */
+    public void updateAndFixTable(){
+        adjustBottomCells();
+    }
+    /*
+    First if ->
+         After a row addition, the bottom cells, now middle cells, require a type change.
+         They are set to the middle cell type and subsequently formatted from left to right.
+    Second if ->
+         In contrary after a row deletion the middle cells now become the bottom cells and require a type change.
+     */
+    public void adjustBottomCells(){
+        var tableData = table.getTableData();
+        for (var row : tableData){
+            if(tableData.indexOf(row) < tableData.size()-1) {
+                for (var cell : row) {
+                    cell.setCellType(Cell.CellType.MIDDLE_SINGLE);
+                }
+            }
+            if(tableData.indexOf(row) == tableData.size()-1){
+                for (var cell : row) {
+                    cell.setCellType(Cell.CellType.BOTTOM_SINGLE);
+                }
+            }
+        }
+    }
+    // Check if the column cells has the same width as the headers;
+    // if not adjust the cell width with their header
+    public void applyCorrectColumnWidth(){
+        var tableData = table.getTableData();
+
+        if (tableData.isEmpty()){
+            return;
+        }
+        for (int row = 0; row < tableData.size(); row++) {
+            for (int column = 0; column < table.getRow(row).size(); column++) {
+                if(!checkCorrectColumnWidth(row,column)){
+                    int headerWidth = table.getHeaders().get(column).getCellWidth();
+
+                    table.getCell(row,column).setCellWidth(headerWidth);
+                    table.getCell(row,column).getTextFormatter().setContainerWidth(headerWidth);
+
+                }
+            }
+        }
+    }
+    private boolean checkCorrectColumnWidth(int rowIndex, int columnIndex){
+
+        int columnCellWidth = table.getCell(rowIndex,columnIndex).getCellWidth();
+        int headerCellWidth = table.getHeaders().get(columnIndex).getCellWidth();
+
+        return columnCellWidth == headerCellWidth;
+
+    }
 }
