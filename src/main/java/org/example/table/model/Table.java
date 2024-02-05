@@ -56,22 +56,57 @@ public class Table {
         this();
         setHeaders(padding,columnName);
     }
+
     public Table(List<String> columnName){
         this(DEFAULT_PADDING,columnName);
     }
-    public Table(int padding, Object[][] dataMatrix){
+    // Table constructor using a Matrix
+    public enum TableOrientation{
+        ROWS_AS_ROWS,
+        ROWS_AS_COLUMNS
+    }
+    public Table(int padding,List<String> headers, Object[][] dataMatrix, TableOrientation tableOrientation){
         this();
+        if(headers.isEmpty() || (dataMatrix == null || dataMatrix.length == 0 || dataMatrix[0].length == 0)){
+            System.out.println("Headers or Data Matrix cannot be empty");
+            return;
+        }
+        if (!validateInputDataMatrix(headers,dataMatrix)){
+            System.out.println("Data Matrix width must be equal to the headers size");
+            return;
+        }
+        // If matrix has missing elements then they would be treated as null cells
+        if (tableOrientation == TableOrientation.ROWS_AS_ROWS) {
+            setHeaders(padding,headers);
+            for (int i = 0; i < dataMatrix[0].length; i++) {
+                addRow(Arrays.asList(dataMatrix[i]));
+            }
+        }
+        if (tableOrientation == TableOrientation.ROWS_AS_COLUMNS){
+            for (int i = 0; i < dataMatrix[0].length; i++) {
+                addColumn(headers.get(i),padding,dataMatrix[i]);
+            }
+        }
+    }
+    private boolean validateInputDataMatrix(List<String> headers, Object[][] dataMatrix){
+        return dataMatrix[0].length == headers.size();
+    }
+    public Table(List<String> headers,Object[][] dataMatrix,TableOrientation tableOrientation){
+        this(DEFAULT_PADDING,headers,dataMatrix,tableOrientation);
+    }
+    public Table(int padding, String[] headers,Object[][] dataMatrix,TableOrientation tableOrientation){
+        this(padding,Arrays.asList(headers),dataMatrix,tableOrientation);
+    }
+    public Table(String[] headers,Object[][] dataMatrix,TableOrientation tableOrientation){
+        this(DEFAULT_PADDING,Arrays.asList(headers),dataMatrix,tableOrientation);
+    }
 
-    }
-    public Table(Object[][] dataMatrix){
-        this(DEFAULT_PADDING,dataMatrix);
-    }
 
     /*
         Setters
      */
-    public void setHeader(int columnIndex, int padding, String newHeader){
-        editor.setHeaderAt(columnIndex,padding,newHeader);
+    public void replaceHeader(int columnIndex, int padding, String newHeader){
+        editor.replaceHeaderAt(columnIndex,padding,newHeader);
         editor.applyCorrectColumnWidth();
     }
     public void setHeaders(String... columnName){
@@ -163,10 +198,14 @@ public class Table {
         return tableData.size();
     }
 
+    public StringBuilder getFormattedTable() {
+        return formattedTable;
+    }
+
     /*
-        Table Manipulation
-        -> Row Manipulation
-     */
+            Table Manipulation
+            -> Row Manipulation
+         */
     public void addRow(List<?> rowData){
         editor.addRow(rowData,bottomRowType);
         editor.updateAndFixTable();
@@ -198,6 +237,15 @@ public class Table {
     }public void addColumn(String header, Object... columnData){
         addColumn(header,DEFAULT_PADDING,columnData);
     }
+    public void removeColumn(int columnIndex){
+        editor.deleteColumn(columnIndex);
+    }
+    public void removeLastColumn(){
+        removeColumn(getTableWidth()-1);
+    }
+    public void removeFirstColumn(){
+        removeColumn(0);
+    }
 
     /*
         To String Method
@@ -210,6 +258,10 @@ public class Table {
             return "Table is empty";
         }
         // Joins the table headers with table content together for output
+        // Checks for a two-column table, removes characters (chars for joining middle cells) from the first column to account for the absence of middle cells.
+        if (getTableWidth() == 2){
+            return editor.adjustTableOutputForTwoColumns(String.valueOf(formattedHeaders) + formattedTable);
+        }
         return String.valueOf(formattedHeaders) + formattedTable;
     }
 

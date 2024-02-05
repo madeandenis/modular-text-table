@@ -96,7 +96,7 @@ public class Cell<T> {
     // Validators
     private void validateCellWidth(T data, int cellWidth){
         if (cellWidth < dataToString(data).length()) {
-            throw new IllegalArgumentException("Cell width smaller than the content : " + dataToString(this.data) + ")");
+            throw new IllegalArgumentException("Cell width smaller than the content : " + data + " (Cell width : " + cellWidth + ")");
         }
     }
     private void validateCellHeight(int cellHeight){

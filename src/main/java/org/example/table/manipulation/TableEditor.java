@@ -4,7 +4,6 @@ import org.example.table.format.TableFormatter;
 import org.example.table.model.Cell;
 import org.example.table.model.Table;
 import org.example.text.utils.TextUtils;
-import org.w3c.dom.ls.LSInput;
 
 import java.util.*;
 
@@ -49,50 +48,53 @@ public class TableEditor {
         }
     }
     // Changes header value at a specified index
-    public void setHeaderAt(int headerIndex, int padding, String header){
-        var tableData = table.getTableData();
-        if(tableData.isEmpty()){
-            System.out.println("Cannot modify header : Table is empty.");
-            return;
+    public void replaceHeaderAt(int headerIndex, int padding, String header){
+        try {
+            var tableData = table.getTableData();
+            if (tableData.isEmpty()) {
+                System.out.println("Cannot modify header : Table is empty.");
+                return;
+            }
+            if (headerIndex < 0 || headerIndex > table.getTableWidth() - 1) {
+                System.out.println("Cannot modify header : Header index is invalid");
+            }
+            List<String> updatedHeadersList = new ArrayList<>();
+            List<Integer> currHeadersWidths = new ArrayList<>();
+
+            // Method creates a copy of a string list for the current headers and replaces with new header at requested index
+            // Creates integer list for keeping headers widths
+            for (var currHeader : table.getHeaders()) {
+                if (table.getHeaders().indexOf(currHeader) == headerIndex) {
+                    updatedHeadersList.add(header);
+                } else {
+                    updatedHeadersList.add(currHeader.getData().toString());
+                }
+                currHeadersWidths.add(currHeader.getCellWidth());
+            }
+
+            // Once the copy is over, the headers are cleared and the updated list is added using padding parameter
+            table.getHeaders().clear();
+            table.getHeaders().addAll(headersToCellList(padding, updatedHeadersList));
+
+            // The headers need to be restored with the previous width
+            for (int column = 0; column < table.getHeaders().size(); column++) {
+                var currHeader = table.getHeaders().get(column);
+
+                // The modified header keeps its cell width and cell text container width
+                if (column == headerIndex) {
+                    continue;
+                } else {
+                    currHeader.setCellWidth(
+                            currHeadersWidths.get(column)
+                    );
+                    currHeader.getTextFormatter().setContainerWidth(
+                            currHeadersWidths.get(column)
+                    );
+                }
+            }
         }
-        if (headerIndex < 0 || headerIndex > table.getTableWidth()-1){
-            System.out.println("Cannot modify header : Header index is invalid");
-        }
-        List<String>  updatedHeadersList   = new ArrayList<>();
-        List<Integer> currHeadersWidths    = new ArrayList<>();
-
-        // Method creates a copy of a string list for the current headers and replaces with new header at requested index
-        // Creates integer list for keeping headers widths
-        for (var currHeader : table.getHeaders()){
-            if(table.getHeaders().indexOf(currHeader) == headerIndex){
-                updatedHeadersList.add(header);
-            }
-            else {
-                updatedHeadersList.add(currHeader.getData().toString());
-            }
-            currHeadersWidths.add(currHeader.getCellWidth());
-        }
-
-        // Once the copy is over, the headers are cleared and the updated list is added using padding parameter
-        table.getHeaders().clear();
-        table.getHeaders().addAll(headersToCellList(padding,updatedHeadersList));
-
-        // The headers need to be restored with the previous width
-        for (int column = 0; column < table.getHeaders().size(); column++) {
-            var currHeader = table.getHeaders().get(column);
-
-            // The modified header keeps its cell width and cell text container width
-            if (column == headerIndex){
-                continue;
-            }
-            else {
-                currHeader.setCellWidth(
-                        currHeadersWidths.get(column)
-                );
-                currHeader.getTextFormatter().setContainerWidth(
-                        currHeadersWidths.get(column)
-                );
-            }
+        catch (IllegalArgumentException e){
+            System.out.println("Caught IllegalArgumentException: " + e.getMessage());
         }
     }
     /*
@@ -119,22 +121,28 @@ public class TableEditor {
                 -> calculatePadding()
      */
     public void addRow(List<?> rowData , Cell.CellType cellType){
-        if(table.getHeaders().isEmpty()){
-            System.out.println("Cannot add rows without table headers");
-            return;
+        try {
+
+            if (table.getHeaders().isEmpty()) {
+                System.out.println("Cannot add rows without table headers");
+                return;
+            }
+            if (!validateRowSize(rowData)) {
+                return;
+            }
+
+            // Calculate individual cell padding based on its corresponding header cell
+            List<Integer> cellPaddings = calculateCellPaddings(rowData);
+
+            // Transform row data into a bottom table row
+            var cellRow = rowToCellList(rowData, cellPaddings, cellType);
+
+            // Add cellRow to the table
+            table.getTableData().add(cellRow);
         }
-        if (!validateRowSize(rowData)){
-            return;
+        catch (IllegalArgumentException e){
+            System.out.println("Caught IllegalArgumentException: " + e.getMessage());
         }
-
-        // Calculate individual cell padding based on its corresponding header cell
-        List<Integer> cellPaddings = calculateCellPaddings(rowData);
-
-        // Transform row data into a bottom table row
-        var cellRow = rowToCellList(rowData,cellPaddings,cellType);
-
-        // Add cellRow to the table
-        table.getTableData().add(cellRow);
     }
     private boolean validateRowSize(List<?> rowData){
         if(rowData.size() > table.getHeaders().size() || rowData.size() < table.getHeaders().size()){
@@ -182,7 +190,7 @@ public class TableEditor {
     // TODO: create row/column insertion beside appending
     /*
         Column Manipulation
-        -> Column appending addColumn()
+        -> Column addition addColumn()
             -> addSingleColumn()
             -> appendColumn
          
@@ -199,59 +207,67 @@ public class TableEditor {
     }
     private void addSingleColumn(String header, int headerPadding, List<?> columnData){
 
-        table.setHeaders(headerPadding, Collections.singletonList(header));
+        try {
 
-        for (int column = 0; column < columnData.size(); column++) {
-            var columnElement = columnData.get(column);
-            Cell.CellType rowType;
-            if(column == columnData.size()-1){
-                rowType = Cell.CellType.BOTTOM_SINGLE;
-            }
-            else {
-                rowType = Cell.CellType.MIDDLE_SINGLE;
-            }
+            table.setHeaders(headerPadding, Collections.singletonList(header));
 
-            addRow(Collections.singletonList(columnElement),rowType);
+            for (int column = 0; column < columnData.size(); column++) {
+                var columnElement = columnData.get(column);
+                Cell.CellType rowType;
+                if (column == columnData.size() - 1) {
+                    rowType = Cell.CellType.BOTTOM_SINGLE;
+                } else {
+                    rowType = Cell.CellType.MIDDLE_SINGLE;
+                }
+
+                addRow(Collections.singletonList(columnElement), rowType);
+            }
+        }
+        catch (IllegalArgumentException e){
+            System.out.println("Caught IllegalArgumentException: " + e.getMessage());
         }
         
     }
     private void appendColumn(String header, int headerPadding, List<?> columnData){
-        if(!validateColumn(columnData)){
-            System.out.println(
-                    "Column input exceeds table height. Required column height : " + table.getTableHeight()
-            );
+        try {
+            if (!validateColumn(columnData)) {
+                System.out.println(
+                        "Column input exceeds table height. Required column height : " + table.getTableHeight()
+                );
+            } else {
+                Cell<String> cellHeader = new Cell<>(header, header.length() + headerPadding, Cell.CellType.TOP_SINGLE);
+
+                int headerCellWidth = header.length() + headerPadding;
+
+                // Append new header
+                table.getHeaders().add(cellHeader);
+
+                for (var columnElement : columnData) {
+                    Cell<?> columnCell;
+                    if (Objects.isNull(columnElement)) {
+                        columnCell = addNulLCell(headerCellWidth);
+                    } else {
+                        columnCell = new Cell<>(
+                                columnElement,
+                                columnElement.toString().length() + calculatePadding(columnElement.toString(), headerCellWidth),
+                                Cell.CellType.TOP_SINGLE
+                        );
+                    }
+
+                    // Add new columnCell to the table
+                    table.getRow(columnData.indexOf(columnElement)).add(columnCell);
+                }
+                // If the newly added column is shorter than the other columns in the table, append null cells to ensure equal column heights.
+                if (columnData.size() < table.getTableHeight()) {
+                    int heightDifference = table.getTableHeight() - columnData.size();
+                    for (int i = 0; i < heightDifference; i++) {
+                        table.getRow(columnData.size() + i).add(addNulLCell(headerCellWidth));
+                    }
+                }
+            }
         }
-        else{
-            Cell<String> cellHeader = new Cell<>(header,header.length()+headerPadding, Cell.CellType.TOP_SINGLE);
-
-            int headerCellWidth = header.length() + headerPadding;
-
-            // Append new header
-            table.getHeaders().add(cellHeader);
-
-            for (var columnElement : columnData){
-                Cell<?> columnCell;
-                if(Objects.isNull(columnElement)){
-                    columnCell = addNulLCell(headerCellWidth);
-                }
-                else {
-                    columnCell = new Cell<>(
-                            columnElement,
-                            columnElement.toString().length() + calculatePadding(columnElement.toString(),headerCellWidth),
-                            Cell.CellType.TOP_SINGLE
-                    );
-                }
-
-                // Add new columnCell to the table
-                table.getRow(columnData.indexOf(columnElement)).add(columnCell);
-            }
-            // If the newly added column is shorter than the other columns in the table, append null cells to ensure equal column heights.
-            if(columnData.size() < table.getTableHeight()){
-                int heightDifference = table.getTableHeight() - columnData.size();
-                for (int i = 0; i < heightDifference; i++) {
-                    table.getRow(columnData.size() + i).add(addNulLCell(headerCellWidth));
-                }
-            }
+        catch (IllegalArgumentException e){
+            System.out.println("Caught IllegalArgumentException: " + e.getMessage());
         }
     }
     private Cell<?> addNulLCell(int headerWidth){
@@ -263,6 +279,20 @@ public class TableEditor {
     }
     private boolean validateColumn(List<?> columnData){
         return columnData.size() <= table.getTableHeight();
+    }
+    /*
+        Column Deletion
+     */
+    public void deleteColumn(int columnIndex){
+        if( table.getTableData().isEmpty() || (columnIndex < 0 || columnIndex >= table.getTableWidth())){
+            System.out.println("Column at index : " + columnIndex + " does not exist");
+        }
+        else{
+            table.getHeaders().remove(columnIndex);
+            for (int i = 0; i < table.getTableHeight(); i++) {
+                table.getTableData().get(i).remove(columnIndex);
+            }
+        }
     }
 
     /*
@@ -324,4 +354,18 @@ public class TableEditor {
         return columnCellWidth == headerCellWidth;
 
     }
+    public String adjustTableOutputForTwoColumns(String tableOutput){
+        int tableHeightInChars = TextUtils.countRows(tableOutput);
+        String[] tableOutputRows = tableOutput.split("\n");
+
+        for (int i = 0; i < tableHeightInChars; i++) {
+            tableOutputRows[i] = TextUtils.removeCharAt(
+                    tableOutputRows[i],
+                    table.getHeaders().get(0).getCellWidth() + 1);
+        }
+        return TextUtils.assembleRows(tableOutputRows);
+    }
+
+    //TODO: handle cell overflow ...
+
 }

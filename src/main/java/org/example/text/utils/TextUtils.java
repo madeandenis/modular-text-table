@@ -48,5 +48,20 @@ public class TextUtils {
             return null; // Invalid row index
         }
     }
+    public static String removeCharAt(String originalString, int index){
+        if (index < 0 || index >= originalString.length()){
+            throw new IndexOutOfBoundsException("Cannot delete char from : " + originalString );
+        }
+        StringBuilder stringBuilder = new StringBuilder(originalString);
+        stringBuilder.deleteCharAt(index);
 
+        return stringBuilder.toString();
+    }
+    public static String assembleRows(String[] rows) {
+        StringBuilder result = new StringBuilder();
+        for (String row : rows) {
+            result.append(row).append("\n");
+        }
+        return result.toString();
+    }
 }

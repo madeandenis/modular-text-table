@@ -38,7 +38,61 @@ class TableTest {
 
         table.setHeaders(10,stringList1);
 
-        table.setHeader(-1,30,"test");
+        table.replaceHeader(-1,30,"test");
+
+
+        displayTableResult(table);
+    }
+
+    @Test
+    void testTableConstructors_usingMatrix(){
+        Object[][] matrix = new Object[3][3];
+
+        matrix[0][0] = 1;
+        matrix[0][1] = "Hello";
+        matrix[0][2] = null;
+
+        matrix[1][0] = "WorldOf";
+        matrix[1][1] = 3.14;
+        matrix[1][2] = "Java";
+
+        matrix[2][0] = null;
+        matrix[2][1] = 42;
+        matrix[2][2] = "Matrix";
+
+        String[] headerArr = {"One","Two","Three"};
+        List<String> headerList = new ArrayList<>(Arrays.asList(headerArr));
+
+        Table table = new Table(10,headerList,matrix, Table.TableOrientation.ROWS_AS_ROWS);
+
+        table.removeColumn(2);
+//        table.removeColumn(1);
+
+        displayTableResult(table);
+
+    }
+
+    @Test
+    void test_CellOverflow(){
+        Object[][] matrix = new Object[3][3];
+
+        // Populate the matrix with various elements
+        matrix[0][0] = 1;
+        matrix[0][1] = "HelloHelloHello";
+        matrix[0][2] = null;
+
+        matrix[1][0] = "ejfijisjfWFQASFAS";
+        matrix[1][1] = 3.14;
+        matrix[1][2] = "Java";
+
+        matrix[2][0] = null;
+        matrix[2][1] = 42;
+        matrix[2][2] = "Matrixaressdssd2";
+
+        String[] headerArr = {"One","Two","Three"};
+        List<String> headerList = new ArrayList<>(Arrays.asList(headerArr));
+
+        Table table = new Table(10,headerList,matrix, Table.TableOrientation.ROWS_AS_ROWS);
 
 
         displayTableResult(table);
