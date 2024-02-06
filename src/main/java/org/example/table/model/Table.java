@@ -3,6 +3,8 @@ package org.example.table.model;
 import org.example.table.format.TableFormatter;
 import org.example.table.manipulation.TableEditor;
 import org.example.text.styles.TableStyles;
+import org.example.text.utils.TextUtils;
+import org.javatuples.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,6 +17,11 @@ public class Table {
     private TableStyles         tableStyle;
     TableFormatter              formatter;
     TableEditor                 editor;
+
+    ColumnAlign tableAlignment;
+    Stack<Pair<ColumnAlign,Integer>> alignments;
+    Stack<CasingStyle> headersStyles;
+    Stack<Pair<CasingStyle,Integer>> columnStyles;
 
     // Default constants
     public static final TableStyles DEFAULT_STYLE = TableStyles.BoxDrawing;
@@ -30,15 +37,17 @@ public class Table {
         tableStyle       = DEFAULT_STYLE;
         formatter        = new TableFormatter();
         editor           = new TableEditor(this);
+        tableAlignment   = ColumnAlign.DEFAULT;
+        alignments       = new Stack<>();
+        headersStyles    = new Stack<>();
+        columnStyles     = new Stack<>();
     }
 
     /*
         Table Constructors
         -> defaultConstructor
         -> with parameters for headers initialization
-            -> padding with varargs
             -> varargs
-            -> padding with list
             -> list
             -> matrix
      */
@@ -49,58 +58,56 @@ public class Table {
         this();
         setHeaders(padding,columnName);
     }
-    public Table(String... columnName){
-        this(DEFAULT_PADDING,columnName);
-    }
     public Table(int padding, List<String> columnName){
         this();
         setHeaders(padding,columnName);
-    }
-
-    public Table(List<String> columnName){
-        this(DEFAULT_PADDING,columnName);
     }
     // Table constructor using a Matrix
     public enum TableOrientation{
         ROWS_AS_ROWS,
         ROWS_AS_COLUMNS
     }
+    // Object[][] matrix
     public Table(int padding,List<String> headers, Object[][] dataMatrix, TableOrientation tableOrientation){
         this();
         if(headers.isEmpty() || (dataMatrix == null || dataMatrix.length == 0 || dataMatrix[0].length == 0)){
             System.out.println("Headers or Data Matrix cannot be empty");
             return;
         }
-        if (!validateInputDataMatrix(headers,dataMatrix)){
+        if (!validateInputDataMatrix(headers,dataMatrix) && tableOrientation == TableOrientation.ROWS_AS_ROWS){
             System.out.println("Data Matrix width must be equal to the headers size");
             return;
         }
         // If matrix has missing elements then they would be treated as null cells
         if (tableOrientation == TableOrientation.ROWS_AS_ROWS) {
             setHeaders(padding,headers);
-            for (int i = 0; i < dataMatrix[0].length; i++) {
-                addRow(Arrays.asList(dataMatrix[i]));
+            for (Object[] matrix : dataMatrix) {
+                addRow(matrix);
             }
         }
         if (tableOrientation == TableOrientation.ROWS_AS_COLUMNS){
-            for (int i = 0; i < dataMatrix[0].length; i++) {
+            // We add columns for every header in the string list
+            for (int i = 0; i < headers.size(); i++) {
                 addColumn(headers.get(i),padding,dataMatrix[i]);
             }
         }
     }
+    // Matrix needs to have same width as the headers
     private boolean validateInputDataMatrix(List<String> headers, Object[][] dataMatrix){
         return dataMatrix[0].length == headers.size();
     }
-    public Table(List<String> headers,Object[][] dataMatrix,TableOrientation tableOrientation){
-        this(DEFAULT_PADDING,headers,dataMatrix,tableOrientation);
+    // List<List<Object>> matrix
+    public Table(int padding,List<String> headers, List<List<Object>> dataMatrix, TableOrientation tableOrientation) {
+        this(padding,headers,convertToArrayMatrix(dataMatrix),tableOrientation);
     }
-    public Table(int padding, String[] headers,Object[][] dataMatrix,TableOrientation tableOrientation){
-        this(padding,Arrays.asList(headers),dataMatrix,tableOrientation);
+    private static Object[][] convertToArrayMatrix(List<List<Object>> list) {
+        Object[][] matrix = new Object[list.size()][];
+        for (int i = 0; i < list.size(); i++) {
+            List<Object> row = list.get(i);
+            matrix[i] = row.toArray(new Object[0]);
+        }
+        return matrix;
     }
-    public Table(String[] headers,Object[][] dataMatrix,TableOrientation tableOrientation){
-        this(DEFAULT_PADDING,Arrays.asList(headers),dataMatrix,tableOrientation);
-    }
-
 
     /*
         Setters
@@ -108,15 +115,6 @@ public class Table {
     public void replaceHeader(int columnIndex, int padding, String newHeader){
         editor.replaceHeaderAt(columnIndex,padding,newHeader);
         editor.applyCorrectColumnWidth();
-    }
-    public void setHeaders(String... columnName){
-        setHeaders(DEFAULT_PADDING, Arrays.asList(columnName));
-    }
-    public void setHeaders(int padding, String... columnName){
-        setHeaders(padding, Arrays.asList(columnName));
-    }
-    public void setHeaders(List<String>columnNames){
-        setHeaders(DEFAULT_PADDING,columnNames);
     }
     public void setHeaders(int padding, List<String>columnNames){
         if(getHeaders().isEmpty()) {
@@ -133,11 +131,15 @@ public class Table {
             editor.applyCorrectColumnWidth();
         }
     }
+    public void setHeaders(int padding, String... columnName){
+        setHeaders(padding, Arrays.asList(columnName));
+    }
     /*
         Table Formatting
      */
-    public void setFormattedHeaders(){
+    private void setFormattedHeaders(){
         if(headers.isEmpty()){
+            formattedHeaders.setLength(0);
             return;
         }
         formattedHeaders.setLength(0);
@@ -145,10 +147,12 @@ public class Table {
                 formatter.formatTableRow(headers)
         );
     }
-    public void setFormattedTable(){
+    private void setFormattedTable(){
         if(tableData.isEmpty()){
+            formattedTable.setLength(0);
             return;
         }
+
         formattedTable.setLength(0);
         for(var tableRow : tableData){
             formattedTable.append(
@@ -203,24 +207,76 @@ public class Table {
     }
 
     /*
-            Table Manipulation
-            -> Row Manipulation
-         */
+        Display Methods
+     */
+    public void displayTableWithoutHeaders(){
+        setFormattedTable();
+        System.out.println(".".repeat(
+                TextUtils.getRowFromString(getFormattedTable().toString(), 0).length()
+        ));
+        System.out.println(getFormattedTable());
+    }
+    public void displayTableData(){
+        if (tableData.isEmpty()){
+            System.out.println("Table is empty!");
+            return;
+        }
+        for (var row : tableData){
+            for (var column : row){
+                System.out.print("[" + column.getData() + "], \t");
+            }
+            System.out.println();
+        }
+    }
+    public void displayTableDimensions(){
+        System.out.println("Table Dimensions: " + getTableWidth() + " x " + getTableHeight());
+    }
+
+
+    /*
+        Table Manipulation
+        -> Row Manipulation
+     */
+    // Rows addition/insertion for using different data types are made using wildcard list
+    // Manual addition through String varargs results in only string data types
     public void addRow(List<?> rowData){
         editor.addRow(rowData,bottomRowType);
         editor.updateAndFixTable();
     }
-    public void addRow(Objects... rowData){
+    public void addRow(String... rowData){
         addRow(Arrays.asList(rowData));
     }
-    public void removeRow(int rowIndex){
-        editor.deleteRow(rowIndex);
+    public void addRow(Object[] rowData){
+        addRow(Arrays.asList(rowData));
+    }
+    public void insertRow(int rowIndex, List<?> rowData){
+        editor.insertRow(rowIndex, rowData, bottomRowType);
         editor.updateAndFixTable();
     }
+    public void insertRow(int rowIndex, String... rowData){
+        insertRow(rowIndex,Arrays.asList(rowData));
+    }
+    public void insertRow(int rowIndex, Object[] rowData){
+        insertRow(rowIndex,Arrays.asList(rowData));
+    }
+    public void removeRow(int rowIndex){
+        if (!tableData.isEmpty()) {
+            editor.deleteRow(rowIndex);
+            editor.updateAndFixTable();
+        }
+    }
     public void removeLastRow(){
-        removeRow(getTableHeight()-1);
+        if (tableData.isEmpty()){
+            return;
+        }
+        else {
+            removeRow(getTableHeight() - 1);
+        }
     }
     public void removeFirstRow(){
+        if (tableData.isEmpty()){
+            return;
+        }
         removeRow(0);
     }
     /*
@@ -229,14 +285,14 @@ public class Table {
     public void addColumn(String header, int headerPadding, List<?> columnData){
         editor.addColumn(header,headerPadding,columnData);
     }
-    public void addColumn(String header, List<?> columnData){
-        addColumn(header,DEFAULT_PADDING,columnData);
-    }
-    public void addColumn(String header, int headerPadding, Object... columnData){
+    public void addColumn(String header, int headerPadding, String... columnData){
         addColumn(header,headerPadding,Arrays.asList(columnData));
-    }public void addColumn(String header, Object... columnData){
-        addColumn(header,DEFAULT_PADDING,columnData);
     }
+    public void addColumn(String header, int headerPadding, Object[] columnData){
+        addColumn(header,headerPadding,Arrays.asList(columnData));
+    }
+
+    //TODO public void insertColumn(String header,)
     public void removeColumn(int columnIndex){
         editor.deleteColumn(columnIndex);
     }
@@ -246,12 +302,85 @@ public class Table {
     public void removeFirstColumn(){
         removeColumn(0);
     }
+    /*
+        Table styling
+        -> alignment
+        -> text casing
+        -> set column width/height
+     */
+
+    public enum ColumnAlign{
+        LEFT,CENTER,RIGHT,DEFAULT;
+    }
+    public void alignColumn(int columnIndex, ColumnAlign alignment){
+        alignments.push(new Pair<>(alignment,columnIndex));
+    }
+    public void alignTable(ColumnAlign alignment){
+        editor.alignTable(alignment);
+        this.tableAlignment = alignment;
+        clearAlignments();
+    }
+    private void applyAlignments(){
+        for (var alignment : alignments){
+            editor.alignColumn(alignment.getValue1(),alignment.getValue0());
+        }
+    }
+    public void clearAlignments(){
+        while (!alignments.isEmpty()){
+            alignments.pop();
+        }
+    }
+    // Text Casing
+    public enum CasingStyle{
+        LOWER_CASE,UPPER_CASE,CAPITALIZE
+    }
+    public void setHeadersStyle(CasingStyle casing){
+        headersStyles.push(casing);
+    }
+    public void setColumnStyle(int columnIndex, CasingStyle casing){
+        columnStyles.push(new Pair<>(casing,columnIndex));
+    }
+    private void applyStyling(){
+        for (var headerStyle : headersStyles){
+            editor.setHeadersStyle(headerStyle);
+        }
+        for (var columnStyle : columnStyles){
+            editor.setColumnStyle(columnStyle.getValue1(),columnStyle.getValue0());
+        }
+
+    }
+    public void clearStyling(){
+        while (!headersStyles.isEmpty()){
+            headersStyles.pop();
+        }
+        while (!columnStyles.isEmpty()){
+            columnStyles.pop();
+        }
+    }
+    // Change column width
+    public void setColumnWidth(int columnIndex, int width){
+        editor.setColumnWidth(columnIndex,width);
+    }
+    // Change headers width/height
+    public void setHeadersHeight(int height){
+        editor.setHeadersHeight(height);
+    }
+    public void setHeadersWidth(int width){
+        editor.setHeadersWidth(width);
+    }
+    public void equalizeColumnWidths(){
+        editor.equalizeColumnWidths();
+    }
 
     /*
         To String Method
      */
     @Override
     public String toString(){
+        // Apply default alignment
+        editor.alignTable(tableAlignment);
+        applyAlignments();
+        applyStyling();
         setFormattedHeaders();
         setFormattedTable();
         if (formattedTable.isEmpty() && formattedHeaders.isEmpty()){

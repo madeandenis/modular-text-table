@@ -3,6 +3,7 @@ package org.example.table.manipulation;
 import org.example.table.format.TableFormatter;
 import org.example.table.model.Cell;
 import org.example.table.model.Table;
+import org.example.text.format.TextFormatter;
 import org.example.text.utils.TextUtils;
 
 import java.util.*;
@@ -50,13 +51,9 @@ public class TableEditor {
     // Changes header value at a specified index
     public void replaceHeaderAt(int headerIndex, int padding, String header){
         try {
-            var tableData = table.getTableData();
-            if (tableData.isEmpty()) {
-                System.out.println("Cannot modify header : Table is empty.");
-                return;
-            }
-            if (headerIndex < 0 || headerIndex > table.getTableWidth() - 1) {
+            if (headerIndex < 0 || headerIndex > table.getHeaders().size() - 1) {
                 System.out.println("Cannot modify header : Header index is invalid");
+                return;
             }
             List<String> updatedHeadersList = new ArrayList<>();
             List<Integer> currHeadersWidths = new ArrayList<>();
@@ -115,39 +112,57 @@ public class TableEditor {
 
     /*
         Row Manipulation
-        -> Row appending addRow()
-            -> validateRowSize()
-            -> calculateCellPaddings()
+        -> insertRow()
+        -> addRow()
+            -> handleAddRow()
+                -> validateRowSize()
+                -> calculateCellPaddings()
                 -> calculatePadding()
      */
+    public void insertRow(int rowIndex, List<?> rowData , Cell.CellType cellType){
+        handleAddRow(rowIndex,rowData,cellType);
+    }
     public void addRow(List<?> rowData , Cell.CellType cellType){
+        handleAddRow(table.getTableHeight(),rowData,cellType);
+    }
+    private void handleAddRow(Integer rowIndex, List<?> rowData, Cell.CellType cellType) {
         try {
-
+            // If a cell is being appended and not inserted inside doesn't need to check this if
+            if ((rowIndex < 0 || rowIndex > table.getTableHeight() - 1) && rowIndex != table.getTableHeight()) {
+                System.out.println("Row at index : " + rowIndex + " does not exist");
+                return;
+            }
             if (table.getHeaders().isEmpty()) {
                 System.out.println("Cannot add rows without table headers");
                 return;
             }
-            if (!validateRowSize(rowData)) {
-                return;
+            if (validateRowSize(rowData)) {
+                // Calculate individual cell padding based on its corresponding header cell
+                List<Integer> cellPaddings = calculateCellPaddings(rowData);
+
+                // Transform row data into a bottom table row
+                var cellRow = rowToCellList(rowData, cellPaddings, cellType);
+
+                // Add cellRow to the table
+                if (rowIndex == table.getTableHeight()){
+                    table.getTableData().add(cellRow);
+                }
+                else {
+                    table.getTableData().add(rowIndex, cellRow);
+                }
             }
-
-            // Calculate individual cell padding based on its corresponding header cell
-            List<Integer> cellPaddings = calculateCellPaddings(rowData);
-
-            // Transform row data into a bottom table row
-            var cellRow = rowToCellList(rowData, cellPaddings, cellType);
-
-            // Add cellRow to the table
-            table.getTableData().add(cellRow);
         }
         catch (IllegalArgumentException e){
             System.out.println("Caught IllegalArgumentException: " + e.getMessage());
         }
     }
     private boolean validateRowSize(List<?> rowData){
-        if(rowData.size() > table.getHeaders().size() || rowData.size() < table.getHeaders().size()){
-            System.out.println(
-                    "Row has more cells than expected. Expected: " + table.getHeaders().size() + " cells.");
+        if(rowData.size() != table.getHeaders().size()){
+            String message = (rowData.size() > table.getHeaders().size()) ?
+                    "Row has more cells than expected." :
+                    "Row has fewer cells than expected.";
+
+            System.out.println(message + " Expected: " + table.getHeaders().size() + " cells.");
             return false;
         }
         return true;
@@ -205,6 +220,9 @@ public class TableEditor {
             appendColumn(header,headerPadding,columnData);
         }
     }
+    public void insertColumn(String header, int headerPadding, List<?> columnData){
+
+    }
     private void addSingleColumn(String header, int headerPadding, List<?> columnData){
 
         try {
@@ -230,11 +248,8 @@ public class TableEditor {
     }
     private void appendColumn(String header, int headerPadding, List<?> columnData){
         try {
-            if (!validateColumn(columnData)) {
-                System.out.println(
-                        "Column input exceeds table height. Required column height : " + table.getTableHeight()
-                );
-            } else {
+            if (validateColumn(columnData)) {
+
                 Cell<String> cellHeader = new Cell<>(header, header.length() + headerPadding, Cell.CellType.TOP_SINGLE);
 
                 int headerCellWidth = header.length() + headerPadding;
@@ -265,6 +280,12 @@ public class TableEditor {
                     }
                 }
             }
+            else {
+                System.out.println(
+                        "Column input exceeds table height. Required column height : " + table.getTableHeight()
+                );
+            }
+
         }
         catch (IllegalArgumentException e){
             System.out.println("Caught IllegalArgumentException: " + e.getMessage());
@@ -294,6 +315,99 @@ public class TableEditor {
             }
         }
     }
+    /*
+        Table styling
+        -> alignment
+        -> text casing
+        -> column width
+        -> headers height
+     */
+    public void alignColumn(int columnIndex, Table.ColumnAlign alignment){
+        
+        TextFormatter.Alignment formatterAlignment = null;
+
+        switch (alignment){
+            case LEFT -> formatterAlignment = TextFormatter.Alignment.LEFT;
+            case CENTER -> formatterAlignment = TextFormatter.Alignment.CENTER;
+            case RIGHT -> formatterAlignment = TextFormatter.Alignment.RIGHT;
+        }
+
+        var columnHeader = table.getHeaders().get(columnIndex).getTextFormatter();
+
+        // Align header
+        if (alignment == Table.ColumnAlign.DEFAULT) {
+            columnHeader.align(TextFormatter.Alignment.CENTER);
+        }
+        else {
+            columnHeader.align(formatterAlignment);
+        }
+
+        for (int row = 0; row < table.getTableHeight(); row++) {
+            var columnCell = table.getTableData().get(row).get(columnIndex).getTextFormatter();
+            if (alignment == Table.ColumnAlign.DEFAULT) {
+                columnCell.align(TextFormatter.Alignment.LEFT);
+            }
+            else {
+                columnCell.align(formatterAlignment);
+            }
+        }
+    }
+    public void alignTable(Table.ColumnAlign alignment){
+        for (int column = 0; column < table.getTableWidth(); column++) {
+            alignColumn(column,alignment);
+        }
+
+    }
+    // Text Casing
+    public void setHeadersStyle(Table.CasingStyle casing) {
+        for (var header : table.getHeaders()){
+            switch (casing){
+                case LOWER_CASE -> header.text().lowerCase();
+                case UPPER_CASE -> header.text().upperCase();
+                case CAPITALIZE -> header.text().capitalize();
+            }
+
+        }
+    }
+    public void setColumnStyle(int columnIndex, Table.CasingStyle casing){
+        for (int row = 0; row < table.getTableHeight(); row++) {
+            var columnCell = table.getCell(row,columnIndex).text();
+            switch (casing){
+                case LOWER_CASE -> columnCell.lowerCase();
+                case UPPER_CASE -> columnCell.upperCase();
+                case CAPITALIZE -> columnCell.capitalize();
+            }
+        }
+    }
+    public void setColumnWidth(int columnIndex, int width){
+        var header =  table.getHeaders().get(columnIndex);
+        header.setCellWidth(width);
+        header.getTextFormatter().setContainerWidth(width);
+
+        for (int row = 0; row < table.getTableHeight(); row++) {
+            var columnCell = table.getCell(row,columnIndex);
+            columnCell.setCellWidth(width);
+            columnCell.getTextFormatter().setContainerWidth(width);
+        }
+    }
+    public void setHeadersHeight(int height){
+        for (var header : table.getHeaders()){
+            header.setCellHeight(height);
+        }
+    }
+    public void setHeadersWidth(int width){
+        for (int column = 0; column < table.getTableWidth(); column++) {
+            setColumnWidth(column,width);
+        }
+    }
+    public void equalizeColumnWidths() {
+        List<Integer> headerWidths = new ArrayList<>();
+        for(var header : table.getHeaders()){
+            headerWidths.add(header.getCellWidth());
+        }
+        setHeadersWidth(Collections.max(headerWidths));
+    }
+
 
     /*
         Update Table
