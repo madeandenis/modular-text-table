@@ -45,7 +45,7 @@ public class TextUtils {
         if (rowIndex >= 0 && rowIndex < rows.length) {
             return rows[rowIndex];
         } else {
-            return null; // Invalid row index
+            return "";
         }
     }
     public static String removeCharAt(String originalString, int index){

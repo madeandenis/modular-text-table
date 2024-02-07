@@ -141,6 +141,7 @@ public class TableFormatter {
         int rowHeight = TextUtils.countRows(
                 cells.get(0).toString()
         );
+
         Cell.CellType rowType = cells.get(0).getCellType();
 
         cells = setOrderedCellTypes(cells,rowType);

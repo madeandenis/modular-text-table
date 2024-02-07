@@ -5,5 +5,6 @@
     <inspection_tool class="ExtractMethodRecommender" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="minLength" value="682" />
     </inspection_tool>
+    <inspection_tool class="ListRemoveInLoop" enabled="true" level="INFORMATION" enabled_by_default="true" />
   </profile>
 </component>

@@ -96,8 +96,14 @@ public class Table {
     private boolean validateInputDataMatrix(List<String> headers, Object[][] dataMatrix){
         return dataMatrix[0].length == headers.size();
     }
+    public Table(int padding,String[] headers, Object[][] dataMatrix, TableOrientation tableOrientation) {
+        this(padding,Arrays.asList(headers),dataMatrix,tableOrientation);
+    }
     // List<List<Object>> matrix
     public Table(int padding,List<String> headers, List<List<Object>> dataMatrix, TableOrientation tableOrientation) {
+        this(padding,headers,convertToArrayMatrix(dataMatrix),tableOrientation);
+    }
+    public Table(int padding,String[] headers, List<List<Object>> dataMatrix, TableOrientation tableOrientation) {
         this(padding,headers,convertToArrayMatrix(dataMatrix),tableOrientation);
     }
     private static Object[][] convertToArrayMatrix(List<List<Object>> list) {
@@ -159,9 +165,14 @@ public class Table {
                     formatter.formatTableRow(tableRow)
             );
         }
-
     }
-
+    private void formatTableOutput() {
+        editor.alignTable(tableAlignment);
+        applyAlignments();
+        applyStyling();
+        setFormattedHeaders();
+        setFormattedTable();
+    }
 
     /*
         Getters
@@ -210,15 +221,28 @@ public class Table {
         Display Methods
      */
     public void displayTableWithoutHeaders(){
+        if (checkEmptyTable()){
+            return;
+        }
         setFormattedTable();
         System.out.println(".".repeat(
                 TextUtils.getRowFromString(getFormattedTable().toString(), 0).length()
         ));
-        System.out.println(getFormattedTable());
+
+        formatTableOutput();
+        System.out.println(formattedTable);
+    }
+    public void displayTableOnlyHeaders(){
+        if (getHeaders().isEmpty()){
+            return;
+        }
+        setFormattedHeaders();
+
+        formatTableOutput();
+        System.out.println(formattedHeaders);
     }
     public void displayTableData(){
-        if (tableData.isEmpty()){
-            System.out.println("Table is empty!");
+        if (checkEmptyTable()){
             return;
         }
         for (var row : tableData){
@@ -230,6 +254,13 @@ public class Table {
     }
     public void displayTableDimensions(){
         System.out.println("Table Dimensions: " + getTableWidth() + " x " + getTableHeight());
+    }
+    private boolean checkEmptyTable(){
+        if (tableData.isEmpty()){
+            System.out.println("Table is empty!");
+            return true;
+        }
+        return false;
     }
 
 
@@ -266,24 +297,21 @@ public class Table {
         }
     }
     public void removeLastRow(){
-        if (tableData.isEmpty()){
+        if (getTableHeight() == 0) {
+            removeRow(0);
             return;
         }
-        else {
-            removeRow(getTableHeight() - 1);
-        }
+
+        removeRow(getTableHeight() - 1);
     }
     public void removeFirstRow(){
-        if (tableData.isEmpty()){
-            return;
-        }
         removeRow(0);
     }
     /*
         -> Column Manipulation
      */
     public void addColumn(String header, int headerPadding, List<?> columnData){
-        editor.addColumn(header,headerPadding,columnData);
+        editor.addColumn(getTableWidth(),header,headerPadding,columnData);
     }
     public void addColumn(String header, int headerPadding, String... columnData){
         addColumn(header,headerPadding,Arrays.asList(columnData));
@@ -291,12 +319,24 @@ public class Table {
     public void addColumn(String header, int headerPadding, Object[] columnData){
         addColumn(header,headerPadding,Arrays.asList(columnData));
     }
+    public void insertColumn(int columnIndex, String header, int headerPadding, List<?> columnData){
+        editor.addColumn(columnIndex, header,headerPadding,columnData);
+    }
+    public void insertColumn(int columnIndex, String header, int headerPadding, String... columnData){
+        insertColumn(columnIndex, header,headerPadding,Arrays.asList(columnData));
+    }
+    public void insertColumn(int columnIndex, String header, int headerPadding, Object[] columnData){
+        insertColumn(columnIndex, header,headerPadding,Arrays.asList(columnData));
+    }
 
-    //TODO public void insertColumn(String header,)
     public void removeColumn(int columnIndex){
         editor.deleteColumn(columnIndex);
     }
     public void removeLastColumn(){
+        if(getTableWidth() == 0){
+            removeColumn(0);
+            return;
+        }
         removeColumn(getTableWidth()-1);
     }
     public void removeFirstColumn(){
@@ -325,6 +365,7 @@ public class Table {
             editor.alignColumn(alignment.getValue1(),alignment.getValue0());
         }
     }
+    // TODO: fix clearAlignments
     public void clearAlignments(){
         while (!alignments.isEmpty()){
             alignments.pop();
@@ -347,8 +388,8 @@ public class Table {
         for (var columnStyle : columnStyles){
             editor.setColumnStyle(columnStyle.getValue1(),columnStyle.getValue0());
         }
-
     }
+    // TODO : clearStyling not working
     public void clearStyling(){
         while (!headersStyles.isEmpty()){
             headersStyles.pop();
@@ -377,21 +418,24 @@ public class Table {
      */
     @Override
     public String toString(){
-        // Apply default alignment
-        editor.alignTable(tableAlignment);
-        applyAlignments();
-        applyStyling();
-        setFormattedHeaders();
-        setFormattedTable();
-        if (formattedTable.isEmpty() && formattedHeaders.isEmpty()){
+        formatTableOutput();
+        if (isEmptyTable()){
             return "Table is empty";
         }
-        // Joins the table headers with table content together for output
         // Checks for a two-column table, removes characters (chars for joining middle cells) from the first column to account for the absence of middle cells.
-        if (getTableWidth() == 2){
-            return editor.adjustTableOutputForTwoColumns(String.valueOf(formattedHeaders) + formattedTable);
+        if (isTwoColumnTable()){
+            return adjustOutputForTwoColumns();
         }
+        // Joins the table headers with table content together for output
         return String.valueOf(formattedHeaders) + formattedTable;
     }
-
+    private boolean isEmptyTable() {
+        return formattedTable.isEmpty() && formattedHeaders.isEmpty();
+    }
+    private boolean isTwoColumnTable() {
+        return getTableWidth() == 2;
+    }
+    private String adjustOutputForTwoColumns() {
+        return editor.adjustTableOutputForTwoColumns(String.valueOf(formattedHeaders) + formattedTable);
+    }
 }
