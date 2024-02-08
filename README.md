@@ -8,7 +8,7 @@ It provides methods for adding, removing, and styling table elements such as row
 
 ## Installation
 
-.......
+Once the package is free of bugs, it will be made available on the Maven repository, and installation instructions will be provided here.
 
 ## Usage
 
