@@ -1,6 +1,7 @@
 package org.example.table.model;
 
 import org.example.text.format.TextFormatter;
+import org.example.text.styles.TableStyles;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -263,15 +264,17 @@ class TableTest {
         String[] headers = {"EmployeeID", "FullName", "Age", "IsManager", "Salary"};
         Object[][] dataRows = {
                 {1863, "Denis", 31, true,  55000.50},
-                {1952, "Alex",  22, false, 48000.75},
-                {1132, "Alice", 46, true,  62000.25}
+                {null, "Alex",  22, false, 48000.75},
+                {1132, "Alice", 46, true,  null}
         };
         int headerPadding = 5;
 
         Table table = new Table(headerPadding, headers, dataRows, Table.TableOrientation.ROWS_AS_ROWS);
 
         table.setHeadersWidth(10);
-        table.setHeadersHeight(2);
+
+
+        table.setTableStyle(TableStyles.BoxDrawing);
 
         System.out.println(table);
     }

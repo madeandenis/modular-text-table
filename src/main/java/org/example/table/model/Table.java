@@ -118,6 +118,11 @@ public class Table {
     /*
         Setters
      */
+
+    public void setTableStyle(TableStyles tableStyle) {
+        this.tableStyle = tableStyle;
+    }
+
     public void replaceHeader(int columnIndex, int padding, String newHeader){
         editor.replaceHeaderAt(columnIndex,padding,newHeader);
         editor.applyCorrectColumnWidth();
@@ -177,6 +182,10 @@ public class Table {
     /*
         Getters
      */
+
+    public TableStyles getTableStyle() {
+        return tableStyle;
+    }
 
     public List<List<Cell<?>>> getTableData() {
         return tableData;
@@ -297,11 +306,6 @@ public class Table {
         }
     }
     public void removeLastRow(){
-        if (getTableHeight() == 0) {
-            removeRow(0);
-            return;
-        }
-
         removeRow(getTableHeight() - 1);
     }
     public void removeFirstRow(){
@@ -330,13 +334,11 @@ public class Table {
     }
 
     public void removeColumn(int columnIndex){
-        editor.deleteColumn(columnIndex);
+        if (!getTableData().isEmpty()) {
+            editor.deleteColumn(columnIndex);
+        }
     }
     public void removeLastColumn(){
-        if(getTableWidth() == 0){
-            removeColumn(0);
-            return;
-        }
         removeColumn(getTableWidth()-1);
     }
     public void removeFirstColumn(){
@@ -387,6 +389,17 @@ public class Table {
         }
         for (var columnStyle : columnStyles){
             editor.setColumnStyle(columnStyle.getValue1(),columnStyle.getValue0());
+        }
+        applyTableStyle();
+    }
+    private void applyTableStyle(){
+        for(var header : headers){
+            header.setTableStyle(tableStyle);
+        }
+        for (var row : tableData){
+            for (var cell : row){
+                cell.setTableStyle(tableStyle);
+            }
         }
     }
     // TODO : clearStyling not working

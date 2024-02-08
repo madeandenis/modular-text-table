@@ -50,7 +50,7 @@ public class TextFormatter<T> {
             this.containerWidth = containerWidth;
         }
         else {
-            throw new IllegalArgumentException("Container width must non-negative and greater or equal to string data length.");
+            System.out.println("Container width must non-negative and greater or equal to string data length.");
         }
     }
 

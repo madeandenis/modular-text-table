@@ -4,6 +4,8 @@ import org.example.constants.Unicode;
 
 public enum TableStyles {
 
+
+
     BoxDrawing(new char[][] {
             // Header Walls
             {Unicode.boxMatrix[5][0]},  // (═) Horizontal wall
@@ -85,6 +87,327 @@ public enum TableStyles {
             }
 
 
+    }),
+
+    SubtleAsterisc(new char[][] {
+        /// Header Walls
+        {Unicode.boxMatrix[0][0]},  // (─) Horizontal wall
+        {Unicode.boxMatrix[0][2]},  // (│) Vertical Wall
+        // Cell Walls
+        {Unicode.boxMatrix[0][0]},  // (─) Horizontal wall
+        {Unicode.boxMatrix[0][2]},  // (│) Vertical Wall
+
+        // --Top Cells-- (index 4-6)
+        // <- Single Cell corners (upLeft,upRight,bottomLeft,bottomRight)
+        {
+                '*',
+                '*',
+                '*',
+                '*'
+        },
+        // <- Left Cell corners
+        {
+                '*',
+                '*',
+                '*',
+                '*'
+        },
+        // <- Right Cell corners
+        {
+                '*',
+                '*',
+                '*',
+                '*'
+        },
+
+        // -- Middle Cells (index 7-9)
+        // <- Single Cell corners (bottomLeft,bottomRight)
+        {
+                '*',
+                '*'
+        },
+        // <- Left Cell corners
+        {
+                '*',
+                '*'
+        },
+        // <- Right Cell corners
+        {
+                '*',
+                '*'
+        },
+
+        // -- Bottom Cells (index 10-12)
+        // <- Single Cell corners (bottomLeft,bottomRight)
+        {
+                '*',
+                '*'
+        },
+        // <- Left Cell corners
+        {
+                '*',
+                '*'
+        },
+        // <- Right Cell corners
+        {
+                '*',
+                '*'
+        },
+
+        //  -- Cell Spacers -- (index 13-15)
+        // <-  Top Cell Spacers
+        {
+                '*',
+                '*'
+        },
+        // <-  Middle Cell Spacers
+        {
+                '*'
+        },
+        // <-  Bottom Cell Spacers
+        {
+                '*'
+        }
+    }),
+    BasicAsterisc(new char[][] {
+        /// Header Walls
+        {Unicode.boxMatrix[0][0]},  // (─) Horizontal wall
+        {Unicode.boxMatrix[0][2]},  // (│) Vertical Wall
+        // Cell Walls
+        {'-'},  // (─) Horizontal wall
+        {'|'},  // (│) Vertical Wall
+
+        // --Top Cells-- (index 4-6)
+        // <- Single Cell corners (upLeft,upRight,bottomLeft,bottomRight)
+        {
+                '*',
+                '*',
+                '*',
+                '*'
+        },
+        // <- Left Cell corners
+        {
+                '*',
+                '*',
+                '*',
+                '*'
+        },
+        // <- Right Cell corners
+        {
+                '*',
+                '*',
+                '*',
+                '*'
+        },
+
+        // -- Middle Cells (index 7-9)
+        // <- Single Cell corners (bottomLeft,bottomRight)
+        {
+                '*',
+                '*'
+        },
+        // <- Left Cell corners
+        {
+                '*',
+                '*'
+        },
+        // <- Right Cell corners
+        {
+                '*',
+                '*'
+        },
+
+        // -- Bottom Cells (index 10-12)
+        // <- Single Cell corners (bottomLeft,bottomRight)
+        {
+                '*',
+                '*'
+        },
+        // <- Left Cell corners
+        {
+                '*',
+                '*'
+        },
+        // <- Right Cell corners
+        {
+                '*',
+                '*'
+        },
+
+        //  -- Cell Spacers -- (index 13-15)
+        // <-  Top Cell Spacers
+        {
+                '*',
+                '*'
+        },
+        // <-  Middle Cell Spacers
+        {
+                '*'
+        },
+        // <-  Bottom Cell Spacers
+        {
+                '*'
+        }
+    }),
+    Basic(new char[][] {
+        /// Header Walls
+        {Unicode.boxMatrix[0][0]},  // (─) Horizontal wall
+        {Unicode.boxMatrix[0][2]},  // (│) Vertical Wall
+        // Cell Walls
+        {'-'},  // (─) Horizontal wall
+        {'|'},  // (│) Vertical Wall
+
+        // --Top Cells-- (index 4-6)
+        // <- Single Cell corners (upLeft,upRight,bottomLeft,bottomRight)
+        {
+                '+',
+                '+',
+                '+',
+                '+'
+        },
+        // <- Left Cell corners
+        {
+                '+',
+                '+',
+                '+',
+                '+'
+        },
+        // <- Right Cell corners
+        {
+                '+',
+                '+',
+                '+',
+                '+'
+        },
+
+        // -- Middle Cells (index 7-9)
+        // <- Single Cell corners (bottomLeft,bottomRight)
+        {
+                '+',
+                '+'
+        },
+        // <- Left Cell corners
+        {
+                '+',
+                '+'
+        },
+        // <- Right Cell corners
+        {
+                '+',
+                '+'
+        },
+
+        // -- Bottom Cells (index 10-12)
+        // <- Single Cell corners (bottomLeft,bottomRight)
+        {
+                '+',
+                '+'
+        },
+        // <- Left Cell corners
+        {
+                '+',
+                '+'
+        },
+        // <- Right Cell corners
+        {
+                '+',
+                '+'
+        },
+
+        //  -- Cell Spacers -- (index 13-15)
+        // <-  Top Cell Spacers
+        {
+                '+',
+                '+'
+        },
+        // <-  Middle Cell Spacers
+        {
+                '+'
+        },
+        // <-  Bottom Cell Spacers
+        {
+                '+'
+        }
+    }),
+    BasicASCII(new char[][] {
+        /// Header Walls
+        {'-'},
+        {'|'},
+            // Cell Walls
+        {'-'},
+        {'|'},
+
+        // --Top Cells-- (index 4-6)
+        // <- Single Cell corners (upLeft,upRight,bottomLeft,bottomRight)
+        {
+                '+',
+                '+',
+                '+',
+                '+'
+        },
+        // <- Left Cell corners
+        {
+                '+',
+                '+',
+                '+',
+                '+'
+        },
+        // <- Right Cell corners
+        {
+                '+',
+                '+',
+                '+',
+                '+'
+        },
+
+        // -- Middle Cells (index 7-9)
+        // <- Single Cell corners (bottomLeft,bottomRight)
+        {
+                '+',
+                '+'
+        },
+        // <- Left Cell corners
+        {
+                '+',
+                '+'
+        },
+        // <- Right Cell corners
+        {
+                '+',
+                '+'
+        },
+
+        // -- Bottom Cells (index 10-12)
+        // <- Single Cell corners (bottomLeft,bottomRight)
+        {
+                '+',
+                '+'
+        },
+        // <- Left Cell corners
+        {
+                '+',
+                '+'
+        },
+        // <- Right Cell corners
+        {
+                '+',
+                '+'
+        },
+
+        //  -- Cell Spacers -- (index 13-15)
+        // <-  Top Cell Spacers
+        {
+                '+',
+                '+'
+        },
+        // <-  Middle Cell Spacers
+        {
+                '+'
+        },
+        // <-  Bottom Cell Spacers
+        {
+                '+'
+        }
     });
 
     private final char[][] design;

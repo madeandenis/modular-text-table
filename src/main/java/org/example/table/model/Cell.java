@@ -96,12 +96,12 @@ public class Cell<T> {
     // Validators
     private void validateCellWidth(T data, int cellWidth){
         if (cellWidth < dataToString(data).length()) {
-            throw new IllegalArgumentException("Cell width smaller than the content : " + data + " (Cell width : " + cellWidth + ")");
+            System.out.println(("Cell width smaller than the content : " + data + " (Cell width : " + cellWidth + ")"));
         }
     }
     private void validateCellHeight(int cellHeight){
         if(cellHeight < 1){
-            throw new IllegalArgumentException("Cell height must be greater or equal to 1 (current cell height : " + cellHeight + ")");
+            System.out.println(("Cell height must be greater or equal to 1 (current cell height : " + cellHeight + ")"));
         }
     }
 
