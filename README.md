@@ -273,3 +273,75 @@ table.setHeadersHeight(2);
 │ 1132     │ Alice    │ 46       │ true     │ 62000.25 │
 └──────────┴──────────┴──────────┴──────────┴──────────┘
 ```
+
+### Available table styles
+You can adjust the table style by using the `table.setTableStyle()` method. By default, it's set to `TableStyles.BoxDrawing`.
+#### BasicASCII
+```
++----------+----------+----------+----------+----------+
+|EmployeeID| FullName |   Age    |IsManager |  Salary  |
++----------+----------+----------+----------+----------+
+| 1863     | Denis    | 31       | true     | 55000.5  |
++----------+----------+----------+----------+----------+
+| null     | Alex     | 22       | false    | 48000.75 |
++----------+----------+----------+----------+----------+
+| 1132     | Alice    | 46       | true     | null     |
++----------+----------+----------+----------+----------+
+```
+#### Basic
+```
++──────────+──────────+──────────+──────────+──────────+
+│EmployeeID│ FullName │   Age    │IsManager │  Salary  │
++──────────+──────────+──────────+──────────+──────────+
+| 1863     | Denis    | 31       | true     | 55000.5  |
++----------+----------+----------+----------+----------+
+| null     | Alex     | 22       | false    | 48000.75 |
++----------+----------+----------+----------+----------+
+| 1132     | Alice    | 46       | true     | null     |
++----------+----------+----------+----------+----------+
+```
+#### BasicAsterisc
+```
+*──────────*──────────*──────────*──────────*──────────*
+│EmployeeID│ FullName │   Age    │IsManager │  Salary  │
+*──────────*──────────*──────────*──────────*──────────*
+| 1863     | Denis    | 31       | true     | 55000.5  |
+*----------*----------*----------*----------*----------*
+| null     | Alex     | 22       | false    | 48000.75 |
+*----------*----------*----------*----------*----------*
+| 1132     | Alice    | 46       | true     | null     |
+*----------*----------*----------*----------*----------*
+```
+#### SubtleAsterisc
+```
+*──────────*──────────*──────────*──────────*──────────*
+│EmployeeID│ FullName │   Age    │IsManager │  Salary  │
+*──────────*──────────*──────────*──────────*──────────*
+│ 1863     │ Denis    │ 31       │ true     │ 55000.5  │
+*──────────*──────────*──────────*──────────*──────────*
+│ null     │ Alex     │ 22       │ false    │ 48000.75 │
+*──────────*──────────*──────────*──────────*──────────*
+│ 1132     │ Alice    │ 46       │ true     │ null     │
+*──────────*──────────*──────────*──────────*──────────*
+```
+#### BoxDrawing
+```
+╒══════════╤══════════╤══════════╤══════════╤══════════╕
+│EmployeeID│ FullName │   Age    │IsManager │  Salary  │
+╞══════════╪══════════╪══════════╪══════════╪══════════╡
+│ 1863     │ Denis    │ 31       │ true     │ 55000.5  │
+├──────────┼──────────┼──────────┼──────────┼──────────┤
+│ null     │ Alex     │ 22       │ false    │ 48000.75 │
+├──────────┼──────────┼──────────┼──────────┼──────────┤
+│ 1132     │ Alice    │ 46       │ true     │ null     │
+└──────────┴──────────┴──────────┴──────────┴──────────┘
+```
+
+## Bugs & drawbacks
+ 
+- **Error Handling**: Due to the lack of error handling, certain errors such as cell overflow or invalid container width are not properly managed. To prevent these errors from affecting the program flow, error throws with messages have been removed.
+- **CellOverflow** : Currently, there isn't a method to automatically resize a column when the contents of a cell overflow its width.
+- `clearStyling` and `clearAlignments` are designed to remove any applied styling and alignments from the default settings. Before, these methods worked fine, but recent changes made them stop working.
+- The `Table` class is tightly coupled with other classes such as `TableFormatter`, `TableEditor`, and `TableStyles`
+- **Complex Constructors**: The class has multiple constructors with different parameter combinations, which can make it challenging to understand how to create an instance of the class.
+  There aren't any factory methods available.
